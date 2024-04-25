@@ -1,105 +1,108 @@
-import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import React from "react";
+import { DataGrid, GridDeleteIcon } from "@mui/x-data-grid";
 import { useQueryClient } from "@tanstack/react-query";
+import { IconButton } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import { useDialog } from "../../../hooks/useDialog";
+import { useSnackbar } from "../../../hooks/useSnackbar";
+import { productsApi } from "../../../api/products";
+import DeleteProductConfirm from "./DeleteProductConfirm";
+
+const USDollar = new Intl.NumberFormat("en-us", {
+  style: "currency",
+  currency: "USD",
+});
 
 const HomeTable = ({ products }) => {
-  const [searchText, setSearchText] = useState("");
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const headers = ["Id", "Name", "Price($)", ""];
+  const { showSnackbar } = useSnackbar();
+  const { showDialog, hideDialog } = useDialog();
 
-  const handleRowClick = (row) => {
-    navigate(`/products/${row.productId}`);
+  const columns = [
+    {
+      field: "productId",
+      headerName: "Id",
+      flex: 1,
+    },
+    {
+      field: "productName",
+      headerName: "Name",
+      flex: 1,
+    },
+    {
+      field: "productPrice",
+      headerName: "Price($)",
+      flex: 1,
+      valueFormatter: (value) => (value ? USDollar.format(value) : ""),
+    },
+    {
+      field: "action",
+      headerName: "",
+      renderCell: (params) => {
+        return (
+          <>
+            <IconButton onClick={() => handleEditClick(params.row)}>
+              <EditIcon />
+            </IconButton>
+            <IconButton
+              color="error"
+              onClick={() => handleRemoveClick(params.row)}
+            >
+              <GridDeleteIcon />
+            </IconButton>
+          </>
+        );
+      },
+    },
+  ];
+
+  const handleEditClick = (product) => {
+    showDialog({
+      title: "Edit Product",
+      content: <div>{product.productPrice}</div>,
+    });
   };
-
-  const handleSearchChange = (event) => {
-    setSearchText(event.target.value);
-  };
-
-  const handleAddClick = () => {
-    navigate(`/AddProduct`)
-  }
 
   const handleRemoveClick = (product) => {
-      try{
-        axios.delete(import.meta.env.VITE_API_URL + "/products/" + product.productId)
-        .then( ()=> queryClient.invalidateQueries({queryKey:["products"]}));
-      }
-      catch(e){
-        console.error(e);
-      }
-  }
+    showDialog({
+      title: "Delete Product?",
+      content: (
+        <DeleteProductConfirm
+          name={product.productName}
+          onDeleteClick={() => handleDeleteProduct(product)}
+        />
+      ),
+    });
+  };
 
-  const filteredProducts = useMemo(() => {
-    if (searchText) {
-      return products.filter((product) =>
-        product.productName.toLowerCase().includes(searchText.toLowerCase())
-      );
+  const handleDeleteProduct = (product) => {
+    try {
+      productsApi
+        .deleteProduct(product.productId)
+        .then(() => queryClient.invalidateQueries({ queryKey: ["products"] }))
+        .finally(() => {
+          hideDialog();
+          showSnackbar({
+            message: `Product ${product.productId} deleted successfully!`,
+            sx: { backgroundColor: "green" },
+          });
+        });
+    } catch (e) {
+      console.error(e);
     }
-    return products;
-  }, [searchText, products]);
+  };
 
   return (
     <div style={{ margin: "auto", width: "500px", height: "100%" }}>
-      <table 
-        style={{
-            width: "100%",
-            border:"none"
-        }}
-      >
-        <tbody>
-          <tr>
-            <td style={{border:"none"}}>
-              <input
-                type="text"
-                value={searchText}
-                onChange={handleSearchChange}
-                style={{ marginBottom: "15px" }}
-              />
-            </td>
-            <td style={{border:"none", textAlign:"right"}}>
-              <input
-                type="button"
-                value="Add New Item +"
-                onClick={handleAddClick}
-                style={{ marginBottom: "15px" }}
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <table
-        style={{
-          width: "100%",
-          border: "1px solid black",
-        }}
-      >
-        <thead>
-          <tr>
-            {headers.map((header, index) => (
-              <th key={index}>{header}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {filteredProducts.map((product, index) => (
-            <tr key={index}>
-              <td onClick={() => handleRowClick(product)}>{product.productId}</td>
-              <td onClick={() => handleRowClick(product)}>{product.productName}</td>
-              <td onClick={() => handleRowClick(product)}>{`$${product.productPrice}.00`}</td>
-              <td>
-                <input
-                  type="button"
-                  value="Remove"
-                  onClick={() => handleRemoveClick(product)}
-                  style={{ marginBottom: "15px" }}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div>
+        <DataGrid
+          rows={products ?? []}
+          columns={columns}
+          getRowId={(row) => row.productId}
+          hideFooter
+          autoHeight
+        />
+      </div>
     </div>
   );
 };
