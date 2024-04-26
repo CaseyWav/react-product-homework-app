@@ -27,4 +27,19 @@ export const productsApi = {
       console.error(e);
     }
   },
+  createProduct: async (product) => {
+    return await axios.post(
+      import.meta.env.VITE_API_URL + "/createProduct",
+      product
+    );
+  },
+  deleteProduct: async (id) => {
+    try {
+      return await axios.delete(
+        import.meta.env.VITE_API_URL + `/products/${id}`
+      );
+    } catch (e) {
+      console.error(e);
+    }
+  },
 };
