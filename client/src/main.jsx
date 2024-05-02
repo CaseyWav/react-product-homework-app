@@ -4,7 +4,7 @@ import "./index.css";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import Home from "./pages/Home/Home";
 import Products from "./pages/Products/Products";
-import AddProduct from "./pages/Home/CreateProductForm";
+import AddProduct from "./pages/Home/ProductForm";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import SnackbarProvider from "../providers/SnackbarProvider";
 import DialogProvider from "../providers/DialogProvider";

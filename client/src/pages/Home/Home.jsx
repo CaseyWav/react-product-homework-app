@@ -5,7 +5,7 @@ import { Button, TextField } from "@mui/material";
 import HomeTable from "./HomeTable";
 import { useQuery } from "@tanstack/react-query";
 import { useDialog } from "../../../hooks/useDialog";
-import CreateProductForm from "./CreateProductForm";
+import ProductForm from "./ProductForm";
 
 const Home = () => {
   const [searchText, setSearchText] = useState("");
@@ -23,7 +23,7 @@ const Home = () => {
   const handleAddClick = () => {
     showDialog({
       title: "Add New Product",
-      content: <CreateProductForm />,
+      content: <ProductForm />,
     });
   };
 
