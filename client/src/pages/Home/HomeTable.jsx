@@ -1,12 +1,13 @@
 import React from "react";
 import { DataGrid, GridDeleteIcon } from "@mui/x-data-grid";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { IconButton } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import { useDialog } from "../../../hooks/useDialog";
 import { useSnackbar } from "../../../hooks/useSnackbar";
 import { productsApi } from "../../../api/products";
 import DeleteProductConfirm from "./DeleteProductConfirm";
+import ProductForm from "./ProductForm";
 
 const USDollar = new Intl.NumberFormat("en-us", {
   style: "currency",
@@ -56,10 +57,22 @@ const HomeTable = ({ products }) => {
     },
   ];
 
+  const { mutate } = useMutation({
+    mutationFn: (product) => productsApi.deleteProduct(product.productId),
+    onSuccess: (_, product) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      hideDialog();
+      showSnackbar({
+        message: `Product ${product.productId} deleted successfully!`,
+        sx: { backgroundColor: "green" },
+      });
+    },
+  });
+
   const handleEditClick = (product) => {
     showDialog({
       title: "Edit Product",
-      content: <div>{product.productPrice}</div>,
+      content: <ProductForm defaultProduct={product} />,
     });
   };
 
@@ -69,27 +82,10 @@ const HomeTable = ({ products }) => {
       content: (
         <DeleteProductConfirm
           name={product.productName}
-          onDeleteClick={() => handleDeleteProduct(product)}
+          onDeleteClick={() => mutate(product)}
         />
       ),
     });
-  };
-
-  const handleDeleteProduct = (product) => {
-    try {
-      productsApi
-        .deleteProduct(product.productId)
-        .then(() => queryClient.invalidateQueries({ queryKey: ["products"] }))
-        .finally(() => {
-          hideDialog();
-          showSnackbar({
-            message: `Product ${product.productId} deleted successfully!`,
-            sx: { backgroundColor: "green" },
-          });
-        });
-    } catch (e) {
-      console.error(e);
-    }
   };
 
   return (
